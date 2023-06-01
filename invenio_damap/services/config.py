@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2022 Graz University of Technology.
+# Copyright (C) 2023 TU Wien.
 #
 # Invenio-DAMAP is free software; you can redistribute it and/or modify
 # it under the terms of the MIT License; see LICENSE file for more details.
 
 """Invenio-DAMAP service API configuration."""
 
-from flask_babelex import gettext as _
+from invenio_i18n import gettext as _
 from invenio_records_resources.services import ServiceConfig
 from invenio_records_resources.services.base import Link
 from invenio_records_resources.services.base.config import ConfiguratorMixin, FromConfig
