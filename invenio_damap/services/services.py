@@ -11,6 +11,7 @@
 import requests
 
 from flask_sqlalchemy import Pagination
+from invenio_i18n import lazy_gettext as _
 from invenio_rdm_records.proxies import current_rdm_records_service
 from invenio_records_resources.services import Service
 from invenio_records_resources.services.base import LinksTemplate

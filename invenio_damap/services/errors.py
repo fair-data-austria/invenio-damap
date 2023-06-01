@@ -8,7 +8,7 @@
 
 """Errors for InvenioDAMAP."""
 
-from flask_babelex import lazy_gettext as _
+from invenio_i18n import gettext as _
 
 
 class InvenioDAMAPError(Exception):
