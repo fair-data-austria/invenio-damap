@@ -69,6 +69,8 @@ class InvenioDAMAPServiceConfig(ServiceConfig, ConfiguratorMixin):
     damap_person_id_function = FromConfig("DAMAP_PERSON_ID_FUNCTION")
     damap_custom_header_function = FromConfig("DAMAP_CUSTOM_HEADER_FUNCTION")
     damap_shared_secret = FromConfig("DAMAP_SHARED_SECRET")
+    damap_user_id_generator = FromConfig("DAMAP_USER_ID_GENERATOR")
+    damap_user_id_resolver = FromConfig("DAMAP_USER_ID_RESOLVER")
 
     service_id = "invenio_damap"
 

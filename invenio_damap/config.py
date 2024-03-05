@@ -8,6 +8,9 @@
 
 """Invenio-DAMAP configuration for InvenioRDM."""
 
+from invenio_damap.generators import default_namespaced_id_generator
+from invenio_damap.resolvers import default_namespace_id_resolver
+
 
 def defaultDAMAPPersonIDFetcher(*args, **kwargs):
     return 123456
@@ -20,6 +23,10 @@ def defaultCustomHeaderFunction(*args, **kwargs):
 DAMAP_BASE_URL = "http://localhost:8085"
 
 DAMAP_PERSON_ID_FUNCTION = defaultDAMAPPersonIDFetcher
+
+DAMAP_USER_ID_GENERATOR = default_namespaced_id_generator
+
+DAMAP_USER_ID_RESOLVER = default_namespace_id_resolver
 
 DAMAP_SHARED_SECRET = "secret stuff or token"
 
@@ -36,3 +43,5 @@ DAMAP_DMP_DATASET_DISTRIBUTION_HOST = {
     "storage_type": None,
     "support_versioning": None,
 }
+
+DAMAP_TISS_API_PERSON_BASE_URL = "https://tiss.tuwien.ac.at/api/person/v22/id"
