@@ -9,15 +9,9 @@
 
 import marshmallow as ma
 from flask_babelex import lazy_gettext as _
-from flask_resources import (
-    HTTPJSONException,
-    ResourceConfig,
-    create_error_handler,
-)
+from flask_resources import HTTPJSONException, ResourceConfig, create_error_handler
 from invenio_records_resources.resources.errors import ErrorHandlersMixin
-from invenio_records_resources.resources.records.args import (
-    SearchRequestArgsSchema,
-)
+from invenio_records_resources.resources.records.args import SearchRequestArgsSchema
 
 from ..services.errors import InvenioDAMAPError
 
@@ -51,6 +45,7 @@ class InvenioDAMAPResourceConfig(ResourceConfig):
         "dataset": "/dataset",
         "record-id": "/<recid>",
         "dmp-id": "/<dmpid>",
+        "user-prefix": "/user",
     }
 
     # Request parsing

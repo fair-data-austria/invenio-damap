@@ -7,10 +7,39 @@
 
 import React from "react";
 import { Button, Icon } from "semantic-ui-react";
+import { http } from "react-invenio-forms";
 
 import PropTypes from "prop-types";
 
 import { DMPModal } from "./DMPModal";
+
+// TODO: Make overridable
+export class DMPAuthButton extends React.Component {
+  render() {
+    const { loading, checkRemoteAccountAvailable } = this.props;
+    return (
+      <Button
+        fluid
+        onClick={checkRemoteAccountAvailable}
+        disabled={false}
+        primary
+        size="medium"
+        aria-haspopup="dialog"
+        icon
+        labelPosition="left"
+        loading={loading}
+      >
+        <Icon name="plus square" />
+        {"Authenticate with DAMAP"}
+      </Button>
+    );
+  }
+}
+
+DMPAuthButton.propTypes = {
+  loading: PropTypes.bool.isRequired,
+  checkRemoteAccountAvailable: PropTypes.func.isRequired,
+};
 
 export class DMPButton extends React.Component {
   constructor(props) {
@@ -19,8 +48,20 @@ export class DMPButton extends React.Component {
       record: props.record,
       disabled: props.disabled,
       open: props.open,
+      linkedAccount: null,
+      loading: false,
     };
   }
+
+  checkRemoteAccountAvailable = async () => {
+    this.setState({ loading: true, linkedAccount: null });
+
+    try {
+      let linkedAccount = await http.get("/api/invenio_damap/damap/user");
+      this.setState({ linkedAccount: linkedAccount });
+    } catch (e) {}
+    this.setState({ loading: false });
+  };
 
   handleOpen = () => {
     this.setState({
@@ -34,30 +75,46 @@ export class DMPButton extends React.Component {
     });
   };
 
+  componentDidMount() {
+    this.checkRemoteAccountAvailable();
+  }
+
   render() {
-    const { disabled, open, record } = this.state;
+    const { disabled, open, record, linkedAccount, loading } = this.state;
+
+    const remoteAccountAvailable = linkedAccount != null;
 
     return (
       <>
-        <Button
-          fluid
-          onClick={this.handleOpen}
-          disabled={disabled}
-          primary
-          size="medium"
-          aria-haspopup="dialog"
-          icon
-          labelPosition="left"
-        >
-          <Icon name="plus square" />
-          {"Add to DMP"}
-        </Button>
-        {open && (
-          <DMPModal
-            open={open}
-            handleClose={this.handleClose}
-            record={record}
-          />
+        {!remoteAccountAvailable && (
+          <DMPAuthButton
+            loading={loading}
+            checkRemoteAccountAvailable={this.checkRemoteAccountAvailable}
+          ></DMPAuthButton>
+        )}
+        {remoteAccountAvailable && (
+          <>
+            <Button
+              fluid
+              onClick={this.handleOpen}
+              disabled={disabled}
+              primary
+              size="medium"
+              aria-haspopup="dialog"
+              icon
+              labelPosition="left"
+            >
+              <Icon name="plus square" />
+              {"Add to DMP"}
+            </Button>
+            {open && (
+              <DMPModal
+                open={open}
+                handleClose={this.handleClose}
+                record={record}
+              />
+            )}
+          </>
         )}
       </>
     );

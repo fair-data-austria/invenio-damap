@@ -15,10 +15,10 @@ theme = WebpackThemeBundle(
     default="semantic-ui",
     themes={
         "semantic-ui": dict(
-            entry= {
+            entry={
                 "invenio-damap": "./js/invenio_damap/index.js",
             },
-            dependencies= {
+            dependencies={
                 "jquery": "^3.2.1",
             },
         ),

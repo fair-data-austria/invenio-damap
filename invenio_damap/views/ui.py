@@ -10,6 +10,7 @@
 
 from flask import Blueprint
 
+
 #
 # Registration
 #
