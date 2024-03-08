@@ -14,7 +14,7 @@ from invenio_records_resources.services.base.config import ConfiguratorMixin, Fr
 from invenio_records_resources.services.records.links import pagination_links
 from sqlalchemy import asc, desc
 
-from invenio_damap.services.schema import InvenioDAMAPSchema
+from invenio_damap.services.schema import InvenioDAMAPSchema, LinkedUserSchema
 
 from ..services.permissions import InvenioDAMAPPermissionPolicy
 from ..services.results import DMPItem, DMPList
@@ -64,7 +64,7 @@ class InvenioDAMAPServiceConfig(ServiceConfig, ConfiguratorMixin):
     """Service factory configuration."""
 
     damap_base_url = FromConfig("DAMAP_BASE_URL", "")
-    damap_person_id_function = FromConfig("DAMAP_PERSON_ID_FUNCTION")
+    damap_person_function = FromConfig("DAMAP_PERSON_FUNCTION")
     damap_custom_header_function = FromConfig("DAMAP_CUSTOM_HEADER_FUNCTION")
     damap_shared_secret = FromConfig("DAMAP_SHARED_SECRET")
 
@@ -80,6 +80,7 @@ class InvenioDAMAPServiceConfig(ServiceConfig, ConfiguratorMixin):
 
     # Service schema
     schema = InvenioDAMAPSchema
+    linked_user_schema = LinkedUserSchema
 
     links_item = {}
 

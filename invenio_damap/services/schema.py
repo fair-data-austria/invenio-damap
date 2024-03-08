@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2022 Graz University of Technology.
+# Copyright (C) 2022-2024 Graz University of Technology.
 #
 # Invenio-DAMAP is free software; you can redistribute it and/or modify
 # it under the terms of the MIT License; see LICENSE file for more details.
@@ -50,12 +50,22 @@ class InvenioDAMAPDatasetSchema(Schema):
 class InvenioDAMAPSchema(Schema):
     """Marshmallow schema for Invenio-DAMAP maDMP."""
 
-    # created = fields.DateTime(dump_only=True)
-    # updated = fields.DateTime(dump_only=True)
     id = fields.Int()
     created = fields.Str()
     project = fields.Nested(nested=InvenioDAMAPProjectSchema)
     datasets = fields.List(fields.Nested(nested=InvenioDAMAPDatasetSchema))
+
+    class Meta:
+        """Meta attributes for the schema."""
+
+        unknown = EXCLUDE
+        ordered = True
+
+
+class LinkedUserSchema(Schema):
+    """Marshmallow schema for DAMAP user."""
+
+    id = fields.Str()
 
     class Meta:
         """Meta attributes for the schema."""

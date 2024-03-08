@@ -15,9 +15,7 @@ from invenio_i18n import lazy_gettext as _
 from invenio_rdm_records.proxies import current_rdm_records_service
 from invenio_records_resources.services import Service
 from invenio_records_resources.services.base import LinksTemplate
-from invenio_records_resources.services.records.schema import (
-    ServiceSchemaWrapper,
-)
+from invenio_records_resources.services.records.schema import ServiceSchemaWrapper
 
 from invenio_damap import export as InvenioDAMAPExport
 
@@ -35,6 +33,11 @@ class InvenioDAMAPService(Service):
         return ServiceSchemaWrapper(self, schema=self.config.schema)
 
     @property
+    def linked_user_schema(self):
+        """Returns the linked user data schema instance."""
+        return ServiceSchemaWrapper(self, schema=self.config.linked_user_schema)
+
+    @property
     def links_item_tpl(self):
         """Item links template."""
         return LinksTemplate(
@@ -48,17 +51,35 @@ class InvenioDAMAPService(Service):
         }
 
         headers.update(self.config.damap_custom_header_function(identity=identity))
-
         return headers
 
-    def _get_user_id(self, identity):
-        """Get the user id from the identity."""
-        return self.config.damap_person_id_function(identity=identity)
+    def _get_linked_user(self, identity, user_id=None, **kwargs):
+        """Read the linked user either from the identity or the provided user id."""
+        user = self.config.damap_person_function(
+            identity=identity, user_id=user_id, **kwargs
+        )
 
-    def add_record_to_dmp(self, identity, recid, dmp_id, data):
+        if not user:
+            raise InvenioDAMAPPersonNotLinkedError(user_id=user_id or identity.id)
+
+        return user
+
+    def read_linked_user(self, identity, user_id=None, **kwargs):
+        """Read the linked user either from the identity or the provided user id."""
+        linked_user = self._get_linked_user(identity, user_id=user_id, **kwargs)
+
+        return self.result_item(
+            self,
+            identity,
+            linked_user,
+            schema=self.linked_user_schema,
+            links_tpl=None,
+        )
+
+    def add_record_to_dmp(self, identity, recid, dmp_id, data, **kwargs):
         """Add the provided record to the DMP"""
 
-        person_id = self._get_user_id(identity=identity)
+        person_id = self._get_linked_user(identity=identity)["id"]
         headers = self._create_headers(identity)
 
         # this will also perform permission checks, ensuring the user may access the record.
@@ -76,12 +97,12 @@ class InvenioDAMAPService(Service):
 
         return record
 
-    def search(self, identity, params):
+    def search(self, identity, params, **kwargs):
         """Perform search for DMPs."""
         self.require_permission(identity, "read")
 
         search_params = self._get_search_params(params)
-        person_id = self._get_user_id(identity=identity)
+        person_id = self._get_linked_user(identity=identity)["id"]
         headers = self._create_headers(identity)
 
         r = requests.get(

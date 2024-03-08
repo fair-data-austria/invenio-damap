@@ -50,6 +50,6 @@ class InvenioDAMAP(object):
         """Initialize resources."""
         # Resources
         self.invenio_damap_resource = InvenioDAMAPResource(
-            InvenioDAMAPResourceConfig,
+            InvenioDAMAPResourceConfig(),
             self.invenio_damap_service,
         )

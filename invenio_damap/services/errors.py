@@ -25,3 +25,11 @@ class InvenioDAMAPDMPNotFoundError(InvenioDAMAPError):
     def __init__(self, id, *args: object):
         """Constructor."""
         super().__init__(_("Can not find DMP with id `{}`".format(id)), *args)
+
+
+class InvenioDAMAPPersonNotLinkedError(InvenioDAMAPError):
+    """Class when a person is not linked."""
+
+    def __init__(self, user_id, *args: object):
+        """Constructor."""
+        super().__init__(_("No linked account for user `{}`".format(user_id)), *args)

@@ -70,8 +70,16 @@ def export_as_madmp(record, links=None, **kwargs):
 
     allowed_user_choices = ["yes", "no", "unknown"]
 
-    personal_data = kwargs.get("personal_data") if kwargs.get("personal_data") in allowed_user_choices else "no"
-    sensitive_data = kwargs.get("sensitive_data") if kwargs.get("sensitive_data") in allowed_user_choices else "no"
+    personal_data = (
+        kwargs.get("personal_data")
+        if kwargs.get("personal_data") in allowed_user_choices
+        else "no"
+    )
+    sensitive_data = (
+        kwargs.get("sensitive_data")
+        if kwargs.get("sensitive_data") in allowed_user_choices
+        else "no"
+    )
 
     # not easily available from technical information:
     data_quality_assurance = None
@@ -109,7 +117,7 @@ def export_as_madmp(record, links=None, **kwargs):
     host = {
         "title": str(current_app.config["THEME_SITENAME"]),
         "url": str(current_app.config["SITE_UI_URL"]),
-        **current_app.config["DAMAP_DMP_DATASET_DISTRIBUTION_HOST"]
+        **current_app.config["DAMAP_DMP_DATASET_DISTRIBUTION_HOST"],
     }
 
     # tying it together

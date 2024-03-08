@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2022 Graz University of Technology.
+# Copyright (C) 2022-2024 Graz University of Technology.
 #
 # Invenio-DAMAP is free software; you can redistribute it and/or modify
 # it under the terms of the MIT License; see LICENSE file for more details.
@@ -8,12 +8,7 @@
 """Invenio-DAMAP resource."""
 
 from flask import g
-from flask_resources import (
-    Resource,
-    resource_requestctx,
-    response_handler,
-    route,
-)
+from flask_resources import Resource, resource_requestctx, response_handler, route
 from invenio_records_resources.resources.errors import ErrorHandlersMixin
 from invenio_records_resources.resources.records.resource import (
     request_data,
@@ -48,6 +43,11 @@ class InvenioDAMAPResource(ErrorHandlersMixin, Resource):
                 + routes["dataset"]
                 + routes["record-id"],
                 self.add_record_to_dmp,
+            ),
+            route(
+                "GET",
+                routes["damap-prefix"] + routes["user-prefix"],
+                self.read_linked_user,
             ),
         ]
 
@@ -90,4 +90,11 @@ class InvenioDAMAPResource(ErrorHandlersMixin, Resource):
             g.identity,
             resource_requestctx.view_args["id"],
         )
+        return item.to_dict(), 200
+
+    @response_handler()
+    def read_linked_user(self):
+        """Read the user id from DAMAP."""
+        item = self.service.read_linked_user(g.identity)
+
         return item.to_dict(), 200
