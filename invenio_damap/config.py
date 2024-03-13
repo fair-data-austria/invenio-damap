@@ -8,24 +8,14 @@
 
 """Invenio-DAMAP configuration for InvenioRDM."""
 
-
-def user_fetcher(identity, user_id=None, *args, **kwargs):
-    return {
-        "id": "123456",
-    }
+from .fetchers import custom_header_fetcher, user_fetcher
 
 
-def custom_header_function(identity, user_id=None, *args, **kwargs):
-    return {}
+DAMAP_BASE_URL = "http://localhost:8085"
+"""The base URL for the DAMAP server."""
 
-
-DAMAP_BASE_URL = "http://localhost:8080"
-
-DAMAP_PERSON_FUNCTION = user_fetcher
-
-DAMAP_SHARED_SECRET = "secret stuff or token"
-
-DAMAP_CUSTOM_HEADER_FUNCTION = custom_header_function
+DAMAP_CUSTOM_HEADER_FUNCTION = custom_header_fetcher
+"""Default function used to define additional headers for HTTP requests to DAMAP."""
 
 DAMAP_DMP_DATASET_DISTRIBUTION_HOST = {
     "availability": None,
@@ -38,3 +28,15 @@ DAMAP_DMP_DATASET_DISTRIBUTION_HOST = {
     "storage_type": None,
     "support_versioning": None,
 }
+"""A dictionary specifying metadata attributes for dataset distribution hosts in DAMAP.
+Depends on the InvenioRDM instance, so each attribute must be modifed accordingly.
+"""
+
+DAMAP_PERSON_FUNCTION = user_fetcher
+"""Default function used to identify a user between InvenioRDM and DAMAP."""
+
+DAMAP_REMOTE_CLIENT_ID = "damap"
+"""The client ID (keycloak realm) used to authenticate with DAMAP."""
+
+DAMAP_SHARED_SECRET = "secret stuff or token"
+"""The shared secret or token used for secure communication with DAMAP."""
