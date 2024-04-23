@@ -7,7 +7,9 @@
 
 """Invenio-DAMAP service."""
 
+from time import time
 
+import jwt
 import requests
 from flask_babelex import lazy_gettext as _
 from flask_sqlalchemy import Pagination
@@ -44,29 +46,41 @@ class InvenioDAMAPService(Service):
             self.config.links_item,
         )
 
-    def _create_headers(self, identity):
-        """Creates the auth header and additonal ones, if defined."""
-        headers = {
-            "Authorization": self.config.damap_shared_secret,
-        }
+    def _create_auth_jwt(self, identity, expires_in=600):
+        """Creates an authorization jwt token for DAMAP."""
+        return jwt.encode(
+            {
+                "exp": time() + expires_in,
+                **self.config.damap_person_function(identity),
+            },
+            self.config.damap_shared_secret,
+            algorithm="HS256",
+        )
 
+    def _create_headers(self, identity, *args, **kwargs):
+        """Creates the auth header and additonal ones, if defined."""
+        headers = {"Authorization": f"Bearer {self._create_auth_jwt(identity)}"}
         headers.update(self.config.damap_custom_header_function(identity=identity))
+        print("Headers: ", headers, flush=True)
         return headers
 
     def _get_linked_user(self, identity, user_id=None, **kwargs):
         """Read the linked user either from the identity or the provided user id."""
-        user = self.config.damap_person_function(
-            identity=identity, user_id=user_id, **kwargs
+        headers = self._create_headers(identity)
+
+        r = requests.post(
+            url=self.config.damap_base_url
+            + "/api/invenio-damap/dmps/",
+            headers=headers,
         )
 
-        if not user:
-            raise InvenioDAMAPPersonNotLinkedError(user_id=user_id or identity.id)
+        r.raise_for_status()
 
-        return user
+        return r.status_code
 
-    def read_linked_user(self, identity, user_id=None, **kwargs):
-        """Read the linked user either from the identity or the provided user id."""
-        linked_user = self._get_linked_user(identity, user_id=user_id, **kwargs)
+    def read_linked_user(self, identity, **kwargs):
+        """Read the linked user from the identity."""
+        linked_user = self._get_linked_user(identity, **kwargs)
 
         return self.result_item(
             self,
