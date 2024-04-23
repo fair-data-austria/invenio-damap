@@ -8,7 +8,8 @@
 
 """Invenio-DAMAP configuration for InvenioRDM."""
 
-from .fetchers import custom_header_fetcher, user_fetcher
+from .fetchers import custom_header_fetcher
+from .generators import default_namespaced_id_generator
 
 
 DAMAP_BASE_URL = "http://localhost:8085"
@@ -32,7 +33,7 @@ DAMAP_DMP_DATASET_DISTRIBUTION_HOST = {
 Depends on the InvenioRDM instance, so each attribute must be modifed accordingly.
 """
 
-DAMAP_PERSON_FUNCTION = user_fetcher
+DAMAP_PERSON_FUNCTION = default_namespaced_id_generator
 """Default function used to identify a user between InvenioRDM and DAMAP."""
 
 DAMAP_REMOTE_CLIENT_ID = "damap"
