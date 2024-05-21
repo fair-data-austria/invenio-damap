@@ -57,70 +57,23 @@ class InvenioDAMAPService(Service):
         )
 
     def _create_headers(self, identity, *args, **kwargs):
-        """Creates the auth header and additonal ones, if defined."""
-        headers = {"Authorization": f"Bearer {self._create_auth_jwt(identity)}"}
-        headers.update(self.config.damap_custom_header_function(identity=identity))
-        print("Headers: ", headers, flush=True)
+        """Creates the auth header and additional ones, if defined."""
+        headers = self.config.damap_custom_header_function(identity=identity)
         return headers
 
-    def _get_linked_user(self, identity, user_id=None, **kwargs):
-        """Read the linked user either from the identity or the provided user id."""
-        headers = self._create_headers(identity)
-
-        r = requests.post(
-            url=self.config.damap_base_url
-            + "/api/invenio-damap/dmps/",
-            headers=headers,
-        )
-
-        r.raise_for_status()
-
-        return r.status_code
-
-    def read_linked_user(self, identity, **kwargs):
-        """Read the linked user from the identity."""
-        linked_user = self._get_linked_user(identity, **kwargs)
-
-        return self.result_item(
-            self,
-            identity,
-            linked_user,
-            schema=self.linked_user_schema,
-            links_tpl=None,
-        )
-
-    def add_record_to_dmp(self, identity, recid, dmp_id, data, **kwargs):
-        """Add the provided record to the DMP"""
-
-        person_id = self._get_linked_user(identity=identity)["id"]
-        headers = self._create_headers(identity)
-
-        # this will also perform permission checks, ensuring the user may access the record.
-        record = current_rdm_records_service.read(identity, recid)
-        exported_record = InvenioDAMAPExport.export_as_madmp(record, **data)
-
-        r = requests.post(
-            url=self.config.damap_base_url
-            + "/api/invenio-damap/dmps/{}/{}".format(dmp_id, person_id),
-            headers=headers,
-            json=exported_record,
-        )
-
-        r.raise_for_status()
-
-        return record
-
-    def search(self, identity, params, **kwargs):
+    def search(self, identity, params, jwt_token=None, **kwargs):
         """Perform search for DMPs."""
         self.require_permission(identity, "read")
 
         search_params = self._get_search_params(params)
-        person_id = self._get_linked_user(identity=identity)["id"]
         headers = self._create_headers(identity)
 
+        if not jwt_token:
+            headers.update({"Authorization": f"Bearer {self._create_auth_jwt(identity)}"})
+
+        print("Headers: ", headers, flush=True)
         r = requests.get(
-            url=self.config.damap_base_url
-            + "/api/invenio-damap/dmps/person/{}".format(person_id),
+            url=self.config.damap_base_url + "/api/invenio-damap/dmps/madmps",
             headers=headers,
             params=search_params,
         )
@@ -143,6 +96,29 @@ class InvenioDAMAPService(Service):
             links_tpl=LinksTemplate(self.config.links_search, context={"args": params}),
             links_item_tpl=self.links_item_tpl,
         )
+
+    def add_record_to_dmp(self, identity, recid, data, jwt_token=None, **kwargs):
+        """Add the provided record to the DMP"""
+
+        headers = self._create_headers(identity)
+
+        # this will also perform permission checks, ensuring the user may access the record.
+        record = current_rdm_records_service.read(identity, recid)
+        exported_record = InvenioDAMAPExport.export_as_madmp(record, **data)
+
+        if not jwt_token:
+            headers.update({"Authorization": f"Bearer {self._create_auth_jwt(identity)}"})
+        
+        r = requests.post(
+            url=self.config.damap_base_url
+            + "/api/invenio-damap/dmps/madmps",
+            headers=headers,
+            json=exported_record,
+        )
+
+        r.raise_for_status()
+
+        return record
 
     def _get_search_params(self, params):
         page = params.get("page", 1)

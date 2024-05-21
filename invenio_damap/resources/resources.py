@@ -44,11 +44,11 @@ class InvenioDAMAPResource(ErrorHandlersMixin, Resource):
                 + routes["record-id"],
                 self.add_record_to_dmp,
             ),
-            route(
-                "GET",
-                routes["damap-prefix"] + routes["user-prefix"],
-                self.read_linked_user,
-            ),
+            # route(
+            #     "GET",
+            #     routes["damap-prefix"] + routes["user-prefix"],
+            #     self.read_linked_user,
+            # ),
         ]
 
         return url_rules
@@ -92,9 +92,9 @@ class InvenioDAMAPResource(ErrorHandlersMixin, Resource):
         )
         return item.to_dict(), 200
 
-    @response_handler()
-    def read_linked_user(self):
-        """Read the user id from DAMAP."""
-        item = self.service.read_linked_user(g.identity)
+    # @response_handler()
+    # def read_linked_user(self):
+    #     """Read the user id from DAMAP."""
+    #     item = self.service.read_linked_user(g.identity)
 
-        return item.to_dict(), 200
+    #     return item.to_dict(), 200

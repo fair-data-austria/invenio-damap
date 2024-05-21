@@ -1,16 +1,37 @@
 {# -*- coding: utf-8 -*-
 
-  Copyright (C) 2022 TU Wien.
+  Copyright (C) 2022-2024 TU Wien.
 
   Invenio-DAMAP is free software; you can redistribute it and/or modify it
   under the terms of the MIT License; see LICENSE file for more details.
 #}
 
 {%- macro render_dmp_button() %}
+  {% set user_jwt = create_auth_jwt() %}
+
   <div class="column pt-5 pb-5">
-    <button id="damap-button" class="ui medium fluid icon positive left labeled button" type="button">
-      <i aria-hidden="true" class="plus icon"></i>
-      Add to DMP
-    </button>
+    {# jwt can be None if the user is not eligible for the integration #}
+    {% if user_jwt is not none %}
+      {% set response = query_damap_madmps(user_jwt) %}
+
+      {% if response.status_code == 200 %}
+        {# user is eligible and identifiable #}
+        <button id="damap-add-button" class="ui medium fluid icon positive left labeled button" type="button" data-available-dmps="{{ response.dmps | jsonify }}">
+          <i aria-hidden="true" class="plus icon"></i>
+          Add to DMP
+        </button>
+        {{ webpack['damap-add-button.js'] }}
+      
+      {% else %}
+        {# user is eligible but not yet identifiable #}
+        {# NOTE: THIS NEEDS TO BE CUSTOMIZABLE (case 3) #}
+        <button id="damap-auth-button" class="ui medium fluid icon positive left labeled button" type="button">
+          <i aria-hidden="true" class="key icon"></i>
+          Authenticate with DAMAP
+        </button>
+        {{ webpack['damap-auth-button.js'] }}
+      {% endif %}
+
+    {% endif %}
   </div>
 {%- endmacro %}
