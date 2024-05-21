@@ -29,8 +29,8 @@ DAMAP_DMP_DATASET_DISTRIBUTION_HOST = {
     "storage_type": None,
     "support_versioning": None,
 }
-"""A dictionary specifying metadata attributes for dataset distribution hosts in DAMAP.
-Depends on the InvenioRDM instance, so each attribute must be modifed accordingly.
+"""A dictionary containing metadata attributes for dataset distribution hosts in DAMAP.
+Depends on the specific InvenioRDM instance, so each attribute must be modified accordingly.
 """
 
 DAMAP_PERSON_FUNCTION = default_namespaced_id_generator

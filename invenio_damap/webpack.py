@@ -17,6 +17,8 @@ theme = WebpackThemeBundle(
         "semantic-ui": dict(
             entry={
                 "invenio-damap": "./js/invenio_damap/index.js",
+                "damap-add-button": "./js/invenio_damap/DMPAddButton.js",
+                "damap-auth-button": "./js/invenio_damap/DMPAuthButton.js",
             },
             dependencies={
                 "jquery": "^3.2.1",
