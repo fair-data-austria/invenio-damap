@@ -5,6 +5,7 @@
 // Invenio-DAMAP is free software; you can redistribute it and/or modify it
 // under the terms of the MIT License; see LICENSE file for more details.
 
+
 import React from "react";
 import { Button, Icon } from "semantic-ui-react";
 import { http } from "react-invenio-forms";
@@ -12,34 +13,8 @@ import { http } from "react-invenio-forms";
 import PropTypes from "prop-types";
 
 import { DMPModal } from "./DMPModal";
+import { DMPAuthButton } from "./DMPAuthButton";
 
-// TODO: Make overridable
-export class DMPAuthButton extends React.Component {
-  render() {
-    const { loading, checkRemoteAccountAvailable } = this.props;
-    return (
-      <Button
-        fluid
-        onClick={checkRemoteAccountAvailable}
-        disabled={false}
-        primary
-        size="medium"
-        aria-haspopup="dialog"
-        icon
-        labelPosition="left"
-        loading={loading}
-      >
-        <Icon name="plus square" />
-        {"Authenticate with DAMAP"}
-      </Button>
-    );
-  }
-}
-
-DMPAuthButton.propTypes = {
-  loading: PropTypes.bool.isRequired,
-  checkRemoteAccountAvailable: PropTypes.func.isRequired,
-};
 
 export class DMPButton extends React.Component {
   constructor(props) {

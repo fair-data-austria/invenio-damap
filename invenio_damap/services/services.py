@@ -1,33 +1,25 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2022 Graz University of Technology.
+# Copyright (C) 2022-2024 Graz University of Technology.
 #
 # Invenio-DAMAP is free software; you can redistribute it and/or modify
 # it under the terms of the MIT License; see LICENSE file for more details.
 
 """Invenio-DAMAP service."""
 
-import re
+from time import time
 
+import jwt
 import requests
 from flask_babelex import lazy_gettext as _
 from flask_sqlalchemy import Pagination
 from invenio_rdm_records.proxies import current_rdm_records_service
-from invenio_records_resources.records import Record
 from invenio_records_resources.services import Service
 from invenio_records_resources.services.base import LinksTemplate
-from invenio_records_resources.services.records.schema import (
-    ServiceSchemaWrapper,
-)
-from sqlalchemy import or_
-from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.sql import text
+from invenio_records_resources.services.records.schema import ServiceSchemaWrapper
 
 from invenio_damap import export as InvenioDAMAPExport
-from invenio_damap.services.errors import (
-    InvenioDAMAPDMPNotFoundError,
-    InvenioDAMAPError,
-)
+from invenio_damap.services.errors import InvenioDAMAPPersonNotLinkedError
 
 
 class InvenioDAMAPService(Service):
@@ -43,60 +35,46 @@ class InvenioDAMAPService(Service):
         return ServiceSchemaWrapper(self, schema=self.config.schema)
 
     @property
+    def linked_user_schema(self):
+        """Returns the linked user data schema instance."""
+        return ServiceSchemaWrapper(self, schema=self.config.linked_user_schema)
+
+    @property
     def links_item_tpl(self):
         """Item links template."""
         return LinksTemplate(
             self.config.links_item,
         )
 
-    def _create_headers(self, identity):
-        """Creates the auth header and additonal ones, if defined."""
-        headers = {
-            "Authorization": self.config.damap_shared_secret,
-        }
-
-        headers.update(
-            self.config.damap_custom_header_function(identity=identity)
+    def _create_auth_jwt(self, identity, expires_in=600):
+        """Creates an authorization jwt token for DAMAP."""
+        return jwt.encode(
+            {
+                "exp": time() + expires_in,
+                **self.config.damap_person_function(identity),
+            },
+            self.config.damap_shared_secret,
+            algorithm="HS256",
         )
 
+    def _create_headers(self, identity, *args, **kwargs):
+        """Creates the auth header and additional ones, if defined."""
+        headers = self.config.damap_custom_header_function(identity=identity)
         return headers
 
-    def _get_user_id(self, identity):
-        """Get the user id from the identity."""
-        return self.config.damap_person_id_function(identity=identity)
-
-    def add_record_to_dmp(self, identity, recid, dmp_id, data):
-        """Add the provided record to the DMP"""
-
-        person_id = self._get_user_id(identity=identity)
-        headers = self._create_headers(identity)
-
-        # this will also perform permission checks, ensuring the user may access the record.
-        record = current_rdm_records_service.read(identity, recid)
-        exported_record = InvenioDAMAPExport.export_as_madmp(record, **data)
-
-        r = requests.post(
-            url=self.config.damap_base_url
-            + "/api/invenio-damap/dmps/{}/{}".format(dmp_id, person_id),
-            headers=headers,
-            json=exported_record,
-        )
-
-        r.raise_for_status()
-
-        return record
-
-    def search(self, identity, params):
+    def search(self, identity, params, jwt_token=None, **kwargs):
         """Perform search for DMPs."""
         self.require_permission(identity, "read")
 
         search_params = self._get_search_params(params)
-        person_id = self._get_user_id(identity=identity)
         headers = self._create_headers(identity)
 
+        if not jwt_token:
+            headers.update({"Authorization": f"Bearer {self._create_auth_jwt(identity)}"})
+
+        print("Headers: ", headers, flush=True)
         r = requests.get(
-            url=self.config.damap_base_url
-            + "/api/invenio-damap/dmps/person/{}".format(person_id),
+            url=self.config.damap_base_url + "/api/invenio-damap/dmps/madmps",
             headers=headers,
             params=search_params,
         )
@@ -116,19 +94,38 @@ class InvenioDAMAPService(Service):
             identity,
             dmps,
             params=search_params,
-            links_tpl=LinksTemplate(
-                self.config.links_search, context={"args": params}
-            ),
+            links_tpl=LinksTemplate(self.config.links_search, context={"args": params}),
             links_item_tpl=self.links_item_tpl,
         )
+
+    def add_record_to_dmp(self, identity, recid, data, jwt_token=None, **kwargs):
+        """Add the provided record to the DMP"""
+
+        headers = self._create_headers(identity)
+
+        # this will also perform permission checks, ensuring the user may access the record.
+        record = current_rdm_records_service.read(identity, recid)
+        exported_record = InvenioDAMAPExport.export_as_madmp(record, **data)
+
+        if not jwt_token:
+            headers.update({"Authorization": f"Bearer {self._create_auth_jwt(identity)}"})
+        
+        r = requests.post(
+            url=self.config.damap_base_url
+            + "/api/invenio-damap/dmps/madmps",
+            headers=headers,
+            json=exported_record,
+        )
+
+        r.raise_for_status()
+
+        return record
 
     def _get_search_params(self, params):
         page = params.get("page", 1)
         size = params.get(
             "size",
-            self.config.search.pagination_options.get(
-                "default_results_per_page"
-            ),
+            self.config.search.pagination_options.get("default_results_per_page"),
         )
 
         _search_cls = self.config.search
@@ -140,15 +137,12 @@ class InvenioDAMAPService(Service):
         )
         _sort_direction_name = (
             params.get("sort_direction")
-            if params.get("sort_direction")
-            in _search_cls.sort_direction_options
+            if params.get("sort_direction") in _search_cls.sort_direction_options
             else _search_cls.sort_direction_default
         )
 
         sort = _search_cls.sort_options.get(_sort_name)
-        sort_direction = _search_cls.sort_direction_options.get(
-            _sort_direction_name
-        )
+        sort_direction = _search_cls.sort_direction_options.get(_sort_direction_name)
 
         query_params = params.get("q", "")
 
