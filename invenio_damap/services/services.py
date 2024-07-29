@@ -8,9 +8,12 @@
 
 """Invenio-DAMAP service."""
 
+from time import time
+
 import jwt
 import requests
 
+from flask_security import current_user
 from flask_sqlalchemy import Pagination
 from invenio_i18n import lazy_gettext as _
 from invenio_rdm_records.proxies import current_rdm_records_service
@@ -45,12 +48,26 @@ class InvenioDAMAPService(Service):
             self.config.links_item,
         )
 
-    def _create_auth_jwt(self, identity, expires_in=600):
+    def _create_auth_jwt(self, identity, expires_in=3600):
         """Creates an authorization jwt token for DAMAP."""
+        person_data = self.config.damap_person_function(identity)
+
+        if person_data is None:
+            return
+
         return jwt.encode(
             {
+                "sub": str(current_user.id),
                 "exp": time() + expires_in,
-                **self.config.damap_person_function(identity),
+                "iat": time(),
+                "invenio-damap": {
+                    "identifiers": {
+                        **person_data,
+                        "tiss": "23",
+                        "graz": "35",
+                        "person": "xyz"
+                    }
+                },
             },
             self.config.damap_shared_secret,
             algorithm="HS256",
@@ -67,13 +84,19 @@ class InvenioDAMAPService(Service):
 
         search_params = self._get_search_params(params)
         headers = self._create_headers(identity)
-
-        if not jwt_token:
-            headers.update({"Authorization": f"Bearer {self._create_auth_jwt(identity)}"})
+        headers.update(
+            {
+                "X-Auth": (
+                    f"{jwt_token}"
+                    if jwt_token
+                    else f"{self._create_auth_jwt(identity)}"
+                )
+            }
+        )
 
         print("Headers: ", headers, flush=True)
         r = requests.get(
-            url=self.config.damap_base_url + "/api/invenio-damap/dmps/madmps",
+            url=self.config.damap_base_url + "/api/madmps",
             headers=headers,
             params=search_params,
         )
@@ -98,20 +121,28 @@ class InvenioDAMAPService(Service):
         )
 
     def add_record_to_dmp(self, identity, recid, data, jwt_token=None, **kwargs):
-        """Add the provided record to the DMP"""
+        """Add the provided record to the DMP."""
 
         headers = self._create_headers(identity)
 
         # this will also perform permission checks, ensuring the user may access the record.
         record = current_rdm_records_service.read(identity, recid)
+        print(data)
         exported_record = InvenioDAMAPExport.export_as_madmp(record, **data)
+        print(exported_record)
 
-        if not jwt_token:
-            headers.update({"Authorization": f"Bearer {self._create_auth_jwt(identity)}"})
-        
+        headers.update(
+            {
+                "X-Auth": (
+                    f"{jwt_token}"
+                    if jwt_token
+                    else f"{self._create_auth_jwt(identity)}"
+                )
+            }
+        )
+
         r = requests.post(
-            url=self.config.damap_base_url
-            + "/api/invenio-damap/dmps/madmps",
+            url=self.config.damap_base_url + "/api/madmps",
             headers=headers,
             json=exported_record,
         )

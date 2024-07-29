@@ -12,6 +12,7 @@ import jwt
 from typing import Union
 
 from flask import current_app
+from flask_principal import AnonymousIdentity
 
 
 def default_namespaced_id_generator(
@@ -28,7 +29,7 @@ def default_namespaced_id_generator(
     Returns:
         dict: Namespaces with the user identifiers, othwerwise None if user is unverified.
     """
-    if identity:
+    if identity and not isinstance(identity, AnonymousIdentity):
         user = identity.user
         for ra in user.remote_accounts:
             for token in ra.remote_tokens:
